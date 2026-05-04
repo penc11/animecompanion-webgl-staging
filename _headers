@@ -1,29 +1,31 @@
 /*
   Cache-Control: no-cache
+  X-Robots-Tag: noindex, nofollow
 
 /Build/*.loader.js
   Content-Type: application/javascript
   Cache-Control: no-cache
 
-/Build/*.framework.js.br
+/Build/*.framework.js
   Content-Type: application/javascript
-  Content-Encoding: br
   Cache-Control: public, max-age=31536000, immutable
 
-/Build/*.wasm.br
+/Build/*.wasm
   Content-Type: application/wasm
-  Content-Encoding: br
   Cache-Control: public, max-age=31536000, immutable
 
-/Build/*.data.br
+/Build/*.data
   Content-Type: application/octet-stream
-  Content-Encoding: br
   Cache-Control: public, max-age=31536000, immutable
 
-/Build/*.bundle.br
+/Build/*.symbols.json
+  Content-Type: application/json
+  Cache-Control: public, max-age=31536000, immutable
+
+/Build/*.bundle
   Content-Type: application/octet-stream
-  Content-Encoding: br
   Cache-Control: public, max-age=31536000, immutable
 
-/TemplateData/*
-  Cache-Control: public, max-age=86400
+/StreamingAssets/*
+  Cache-Control: public, max-age=3600
+  Cross-Origin-Resource-Policy: cross-origin
