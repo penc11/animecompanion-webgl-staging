@@ -20,16 +20,34 @@ export default {
       headers.delete("Content-Encoding");
     }
 
-    if (
-      path.endsWith(".framework.js.br") ||
-      path.endsWith(".data.br") ||
-      path.endsWith(".wasm.br") ||
-      path.endsWith(".bundle.br") ||
-      path.endsWith(".symbols.json.br")
-    ) {
-      headers.set("Content-Type", "application/octet-stream");
+    if (path.endsWith(".framework.js.br")) {
+      headers.set("Content-Type", "application/javascript");
+      headers.set("Content-Encoding", "br");
       headers.set("Cache-Control", "public, max-age=31536000, immutable");
-      headers.delete("Content-Encoding");
+    }
+
+    if (path.endsWith(".wasm.br")) {
+      headers.set("Content-Type", "application/wasm");
+      headers.set("Content-Encoding", "br");
+      headers.set("Cache-Control", "public, max-age=31536000, immutable");
+    }
+
+    if (path.endsWith(".data.br")) {
+      headers.set("Content-Type", "application/octet-stream");
+      headers.set("Content-Encoding", "br");
+      headers.set("Cache-Control", "public, max-age=31536000, immutable");
+    }
+
+    if (path.endsWith(".bundle.br")) {
+      headers.set("Content-Type", "application/octet-stream");
+      headers.set("Content-Encoding", "br");
+      headers.set("Cache-Control", "public, max-age=31536000, immutable");
+    }
+
+    if (path.endsWith(".symbols.json.br")) {
+      headers.set("Content-Type", "application/json");
+      headers.set("Content-Encoding", "br");
+      headers.set("Cache-Control", "public, max-age=31536000, immutable");
     }
 
     if (path.startsWith("/StreamingAssets/")) {
