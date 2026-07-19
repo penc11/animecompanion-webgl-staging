@@ -1,0 +1,69 @@
+<linker>
+  <assembly fullname="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="AnimStateConductor" preserve="all" />
+    <type fullname="AudioSyncBinder" preserve="all" />
+    <type fullname="BlinkController" preserve="all" />
+    <type fullname="EmoteController" preserve="all" />
+    <type fullname="SubtleSway" preserve="all" />
+    <type fullname="VisemeDriver" preserve="all" />
+    <type fullname="AnimStateConductor/ModeConfig" preserve="nothing" serialized="true" />
+    <type fullname="BlendEntry" preserve="nothing" serialized="true" />
+    <type fullname="BlendPreset" preserve="nothing" serialized="true" />
+  </assembly>
+  <assembly fullname="UniHumanoid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="UniHumanoid.Humanoid" preserve="all" />
+  </assembly>
+  <assembly fullname="Unity.Addressables, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" preserve="all">
+    <type fullname="UnityEngine.AddressableAssets.Addressables" preserve="all" />
+  </assembly>
+  <assembly fullname="Unity.Addressables.Android, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="UnityEngine.AddressableAssets.Android.PlayAssetDeliveryInitialization" preserve="all" />
+    <type fullname="UnityEngine.AddressableAssets.Android.PlayAssetDeliveryInitializationData" preserve="all" />
+  </assembly>
+  <assembly fullname="Unity.ResourceManager, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" preserve="all">
+    <type fullname="UnityEngine.ResourceManagement.ResourceProviders.AssetBundleProvider" preserve="all" />
+    <type fullname="UnityEngine.ResourceManagement.ResourceProviders.BundledAssetProvider" preserve="all" />
+    <type fullname="UnityEngine.ResourceManagement.ResourceProviders.InstanceProvider" preserve="all" />
+    <type fullname="UnityEngine.ResourceManagement.ResourceProviders.SceneProvider" preserve="all" />
+  </assembly>
+  <assembly fullname="UnityEngine.AnimationModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="UnityEngine.AnimationClip" preserve="all" />
+    <type fullname="UnityEngine.Animator" preserve="all" />
+    <type fullname="UnityEngine.Avatar" preserve="all" />
+    <type fullname="UnityEngine.RuntimeAnimatorController" preserve="all" />
+  </assembly>
+  <assembly fullname="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="UnityEngine.GameObject" preserve="all" />
+    <type fullname="UnityEngine.Material" preserve="all" />
+    <type fullname="UnityEngine.Mesh" preserve="all" />
+    <type fullname="UnityEngine.MeshFilter" preserve="all" />
+    <type fullname="UnityEngine.MeshRenderer" preserve="all" />
+    <type fullname="UnityEngine.Object" preserve="all" />
+    <type fullname="UnityEngine.Shader" preserve="all" />
+    <type fullname="UnityEngine.SkinnedMeshRenderer" preserve="all" />
+    <type fullname="UnityEngine.Texture2D" preserve="all" />
+    <type fullname="UnityEngine.Transform" preserve="all" />
+  </assembly>
+  <assembly fullname="VRM, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="VRM.VRMSpringBone" preserve="all" />
+    <type fullname="VRM.VRMSpringBoneColliderGroup" preserve="all" />
+    <type fullname="VRM.VRMSpringBoneColliderGroup/SphereCollider" preserve="nothing" serialized="true" />
+  </assembly>
+  <assembly fullname="VRM10, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="UniVRM10.VRM10Expression" preserve="all" />
+    <type fullname="UniVRM10.Vrm10Instance" preserve="all" />
+    <type fullname="UniVRM10.VRM10Object" preserve="all" />
+    <type fullname="UniVRM10.VRM10SpringBoneCollider" preserve="all" />
+    <type fullname="UniVRM10.VRM10SpringBoneColliderGroup" preserve="all" />
+    <type fullname="UniVRM10.VRM10SpringBoneJoint" preserve="all" />
+    <type fullname="UniVRM10.CurveMapper" preserve="nothing" serialized="true" />
+    <type fullname="UniVRM10.MorphTargetBinding" preserve="nothing" serialized="true" />
+    <type fullname="UniVRM10.RendererFirstPersonFlags" preserve="nothing" serialized="true" />
+    <type fullname="UniVRM10.VRM10ObjectExpression" preserve="nothing" serialized="true" />
+    <type fullname="UniVRM10.VRM10ObjectFirstPerson" preserve="nothing" serialized="true" />
+    <type fullname="UniVRM10.VRM10ObjectLookAt" preserve="nothing" serialized="true" />
+    <type fullname="UniVRM10.VRM10ObjectMeta" preserve="nothing" serialized="true" />
+    <type fullname="UniVRM10.Vrm10InstanceSpringBone" preserve="nothing" serialized="true" />
+    <type fullname="UniVRM10.Vrm10InstanceSpringBone/Spring" preserve="nothing" serialized="true" />
+  </assembly>
+</linker>
