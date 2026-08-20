@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>AnimeCompanion</title>
+
+  <style>
+    :root {
+      --app-height: 100dvh;
+      --safe-top: env(safe-area-inset-top);
+      --safe-right: env(safe-area-inset-right);
+      --safe-bottom: env(safe-area-inset-bottom);
+      --safe-left: env(safe-area-inset-left);
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: var(--app-height);
+      overflow: hidden;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      overscroll-behavior: none;
+      -webkit-text-size-adjust: 100%;
+      touch-action: manipulation;
+    }
+
+    #unity-container {
+      position: fixed;
+      left: var(--safe-left);
+      right: var(--safe-right);
+      top: var(--safe-top);
+      bottom: var(--safe-bottom);
+      width: calc(100vw - var(--safe-left) - var(--safe-right));
+      height: calc(var(--app-height) - var(--safe-top) - var(--safe-bottom));
+      background: #000;
+      overflow: hidden;
+    }
+
+    #unity-canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+      background: #000;
+      outline: none;
+      touch-action: none;
+    }
+
+    input,
+    textarea,
+    select,
+    .tmp-input,
+    .unity-input,
+    #unity-container input,
+    #unity-container textarea,
+    body input,
+    body textarea {
+      font-size: 16px !important;
+      line-height: 20px !important;
+      transform: none !important;
+      zoom: 1 !important;
+    }
+
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* LOADING SCREEN */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      padding:
+        max(24px, var(--safe-top))
+        max(24px, var(--safe-right))
+        max(24px, var(--safe-bottom))
+        max(24px, var(--safe-left));
+      background:
+        radial-gradient(
+          ellipse at 50% 44%,
+          rgba(247, 229, 239, 0.34) 0%,
+          rgba(238, 231, 248, 0.16) 34%,
+          rgba(252, 250, 252, 0) 68%
+        ),
+        linear-gradient(145deg, #fffdfb 0%, #fcfafc 52%, #faf8fc 100%);
+      opacity: 1;
+      transition: opacity 0.7s ease;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    #loading-screen.hidden {
+      opacity: 0;
+    }
+
+    /* Centered logo and determinate progress presentation. */
+    .loading-composition {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(28px, 4.5vmin, 40px);
+      width: min(100%, 420px);
+      max-height: 100%;
+    }
+
+    /* Preserve the logo's square aspect ratio at every viewport size. */
+    .loading-logo {
+      display: block;
+      width: clamp(112px, 22vmin, 192px);
+      height: auto;
+      max-width: 48vw;
+      max-height: 42vh;
+      object-fit: contain;
+      flex: 0 1 auto;
+    }
+
+    /* Thin, restrained progress indicator driven by createUnityInstance. */
+    #progress-area {
+      width: min(72vw, 360px);
+    }
+
+    #progress-track {
+      width: 100%;
+      height: 4px;
+      background: rgba(123, 100, 120, 0.12);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    #progress-fill {
+      width: 100%;
+      height: 100%;
+      transform: scaleX(0);
+      transform-origin: left center;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #dc9eb9 0%, #bea5d8 100%);
+      transition: transform 0.15s linear;
+    }
+
+    /* Keep the composition balanced on very short landscape viewports. */
+    @media (max-height: 360px) {
+      .loading-composition {
+        gap: 20px;
+      }
+
+      .loading-logo {
+        width: 96px;
+        max-height: 46vh;
+      }
+    }
+  </style>
+  <script src="https://accounts.google.com/gsi/client" async defer
+          onerror="window.__yorivaGoogleGisLoadFailed = true; window.dispatchEvent(new Event('yoriva-google-gis-error'));"></script>
+</head>
+<body>
+  <div id="unity-container">
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+  </div>
+
+  <script>
+    (function () {
+      // Set to false to restore the original viewport handlers on every browser.
+      var ENABLE_MOBILE_WEBGL_KEYBOARD_VIEWPORT_LOCK = true;
+
+      function setAppHeight() {
+        var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        document.documentElement.style.setProperty('--app-height', h + 'px');
+
+        var canvas = document.getElementById('unity-canvas');
+        if (canvas) {
+          canvas.style.width = '100%';
+          canvas.style.height = '100%';
+        }
+
+        window.scrollTo(0, 0);
+      }
+
+      function installLegacyViewportBehavior() {
+        setAppHeight();
+
+        window.addEventListener('resize', setAppHeight);
+
+        window.addEventListener('orientationchange', function () {
+          setTimeout(setAppHeight, 250);
+          setTimeout(setAppHeight, 800);
+        });
+
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', function () {
+            setTimeout(setAppHeight, 50);
+          });
+
+          window.visualViewport.addEventListener('scroll', function () {
+            window.scrollTo(0, 0);
+          });
+        }
+
+        document.addEventListener('focusout', function () {
+          setTimeout(setAppHeight, 80);
+          setTimeout(setAppHeight, 250);
+        }, true);
+      }
+
+      function isSupportedMobileBrowser() {
+        var userAgent = navigator.userAgent || '';
+        var isMobileUserAgent = /Android|iPhone|iPad|iPod/i.test(userAgent);
+        var isIpadOsDesktopMode =
+          navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+        return isMobileUserAgent || isIpadOsDesktopMode;
+      }
+
+      if (!ENABLE_MOBILE_WEBGL_KEYBOARD_VIEWPORT_LOCK || !isSupportedMobileBrowser()) {
+        installLegacyViewportBehavior();
+        return;
+      }
+
+      var HEIGHT_EPSILON_PX = 0.5;
+      var REQUIRED_STABLE_FRAMES = 3;
+      var REQUIRED_STABLE_MS = 120;
+
+      var lastStableAppHeight = getViewportHeight();
+      var keyboardViewportLocked = false;
+      var restoringViewport = false;
+      var transitionGeneration = 0;
+      var pendingTimers = [];
+      var restoreAnimationFrame = 0;
+      var blurredUnityInput = null;
+      var focusoutViewportHeight = lastStableAppHeight;
+      var lastObservedViewportHeight = lastStableAppHeight;
+      var lastViewportHeightChangeAt = now();
+      var stableFrameCount = 0;
+      var viewportRestorationObserved = false;
+
+      function getViewportHeight() {
+        return window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      }
+
+      function now() {
+        return window.performance && window.performance.now
+          ? window.performance.now()
+          : Date.now();
+      }
+
+      function heightsMatch(a, b) {
+        return Math.abs(a - b) <= HEIGHT_EPSILON_PX;
+      }
+
+      function applyHeight(height, scrollToTop) {
+        document.documentElement.style.setProperty('--app-height', height + 'px');
+
+        var canvas = document.getElementById('unity-canvas');
+        if (canvas) {
+          canvas.style.width = '100%';
+          canvas.style.height = '100%';
+        }
+
+        if (scrollToTop) {
+          window.scrollTo(0, 0);
+        }
+      }
+
+      function applyCurrentStableHeight() {
+        if (keyboardViewportLocked) {
+          return;
+        }
+
+        var height = getViewportHeight();
+        applyHeight(height, true);
+        lastStableAppHeight = height;
+      }
+
+      function isUnityGeneratedInput(element) {
+        if (!element) {
+          return false;
+        }
+
+        var tagName = element.tagName;
+        if (tagName !== 'INPUT' && tagName !== 'TEXTAREA') {
+          return false;
+        }
+
+        var parent = element.parentNode;
+        return !!parent && parent.input === element;
+      }
+
+      function removePendingTimer(timerId) {
+        var index = pendingTimers.indexOf(timerId);
+        if (index >= 0) {
+          pendingTimers.splice(index, 1);
+        }
+      }
+
+      function cancelPendingTimers() {
+        for (var i = 0; i < pendingTimers.length; i++) {
+          clearTimeout(pendingTimers[i]);
+        }
+        pendingTimers.length = 0;
+      }
+
+      function cancelRestoreAnimationFrame() {
+        if (restoreAnimationFrame) {
+          window.cancelAnimationFrame(restoreAnimationFrame);
+          restoreAnimationFrame = 0;
+        }
+      }
+
+      function cancelPendingViewportWork() {
+        cancelPendingTimers();
+        cancelRestoreAnimationFrame();
+      }
+
+      function scheduleStableHeightUpdate(delay) {
+        var scheduledGeneration = transitionGeneration;
+        var timerId = setTimeout(function () {
+          removePendingTimer(timerId);
+          if (scheduledGeneration !== transitionGeneration || keyboardViewportLocked) {
+            return;
+          }
+          applyCurrentStableHeight();
+        }, delay);
+        pendingTimers.push(timerId);
+      }
+
+      function beginKeyboardViewportLock(unityInput) {
+        transitionGeneration++;
+        cancelPendingViewportWork();
+        keyboardViewportLocked = true;
+        restoringViewport = false;
+        blurredUnityInput = null;
+        viewportRestorationObserved = false;
+
+        // Restore the last keyboard-closed height without moving the document.
+        applyHeight(lastStableAppHeight, false);
+      }
+
+      function completeViewportRestore(height) {
+        transitionGeneration++;
+        cancelPendingViewportWork();
+        restoringViewport = false;
+        keyboardViewportLocked = false;
+        blurredUnityInput = null;
+        viewportRestorationObserved = false;
+        applyHeight(height, true);
+        lastStableAppHeight = height;
+      }
+
+      function scheduleRestoreProbe(generation) {
+        if (restoreAnimationFrame || generation !== transitionGeneration) {
+          return;
+        }
+
+        restoreAnimationFrame = window.requestAnimationFrame(function (timestamp) {
+          restoreAnimationFrame = 0;
+
+          if (
+            generation !== transitionGeneration ||
+            !keyboardViewportLocked ||
+            !restoringViewport
+          ) {
+            return;
+          }
+
+          var activeElement = document.activeElement;
+          if (isUnityGeneratedInput(activeElement)) {
+            beginKeyboardViewportLock(activeElement);
+            return;
+          }
+
+          // Unity keeps its generated bridge alive briefly so a direct input
+          // switch can reuse it. Do not begin restoration until that bridge
+          // has actually been released.
+          if (blurredUnityInput && isUnityGeneratedInput(blurredUnityInput)) {
+            scheduleRestoreProbe(generation);
+            return;
+          }
+
+          var height = getViewportHeight();
+          if (!heightsMatch(height, lastObservedViewportHeight)) {
+            lastObservedViewportHeight = height;
+            lastViewportHeightChangeAt = timestamp;
+            stableFrameCount = 0;
+          } else {
+            stableFrameCount++;
+          }
+
+          if (
+            heightsMatch(height, lastStableAppHeight) ||
+            !heightsMatch(height, focusoutViewportHeight)
+          ) {
+            viewportRestorationObserved = true;
+          }
+
+          if (
+            viewportRestorationObserved &&
+            stableFrameCount >= REQUIRED_STABLE_FRAMES &&
+            timestamp - lastViewportHeightChangeAt >= REQUIRED_STABLE_MS
+          ) {
+            completeViewportRestore(height);
+            return;
+          }
+
+          scheduleRestoreProbe(generation);
+        });
+      }
+
+      function beginViewportRestore(unityInput) {
+        transitionGeneration++;
+        cancelPendingViewportWork();
+        keyboardViewportLocked = true;
+        restoringViewport = true;
+        blurredUnityInput = unityInput;
+        focusoutViewportHeight = getViewportHeight();
+        lastObservedViewportHeight = focusoutViewportHeight;
+        lastViewportHeightChangeAt = now();
+        stableFrameCount = 0;
+        viewportRestorationObserved =
+          heightsMatch(focusoutViewportHeight, lastStableAppHeight);
+        scheduleRestoreProbe(transitionGeneration);
+      }
+
+      function handleViewportResize() {
+        if (keyboardViewportLocked) {
+          if (restoringViewport) {
+            scheduleRestoreProbe(transitionGeneration);
+          }
+          return;
+        }
+
+        applyCurrentStableHeight();
+      }
+
+      function handleOrientationChange() {
+        if (keyboardViewportLocked) {
+          cancelPendingTimers();
+          if (restoringViewport) {
+            scheduleRestoreProbe(transitionGeneration);
+          }
+          return;
+        }
+
+        scheduleStableHeightUpdate(250);
+        scheduleStableHeightUpdate(800);
+      }
+
+      applyCurrentStableHeight();
+
+      window.addEventListener('resize', handleViewportResize);
+
+      window.addEventListener('orientationchange', handleOrientationChange);
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', function () {
+          if (keyboardViewportLocked) {
+            if (restoringViewport) {
+              scheduleRestoreProbe(transitionGeneration);
+            }
+            return;
+          }
+
+          scheduleStableHeightUpdate(50);
+        });
+
+        window.visualViewport.addEventListener('scroll', function () {
+          if (!keyboardViewportLocked) {
+            window.scrollTo(0, 0);
+          }
+        });
+      }
+
+      document.addEventListener('focusin', function (event) {
+        if (isUnityGeneratedInput(event.target)) {
+          beginKeyboardViewportLock(event.target);
+        }
+      }, true);
+
+      document.addEventListener('focusout', function (event) {
+        if (isUnityGeneratedInput(event.target)) {
+          beginViewportRestore(event.target);
+          return;
+        }
+
+        if (!keyboardViewportLocked) {
+          scheduleStableHeightUpdate(80);
+          scheduleStableHeightUpdate(250);
+        }
+      }, true);
+    })();
+  </script>
+
+  <div id="loading-screen">
+    <div class="loading-composition">
+      <img class="loading-logo" src="yoriva-logo.png" alt="Yoriva" draggable="false" />
+      <div id="progress-area">
+        <div id="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0">
+          <div id="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="Build/827181bf4fb313d9882b60ca5033700d.loader.js"></script>
+  <script>
+    const canvas = document.querySelector("#unity-canvas");
+    const loadingScreen = document.querySelector("#loading-screen");
+    const progressTrack = document.querySelector("#progress-track");
+    const progressFill = document.querySelector("#progress-fill");
+
+    const config = {
+      dataUrl: "Build/04efbbe4b4c318ef7257d24763c514ba.data.br",
+      frameworkUrl: "Build/88067a20eeac8db90e335189bc981447.framework.js.br",
+      codeUrl: "Build/1300f55b08fd9a13310fceea35383c8c.wasm.br",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "DefaultCompany",
+      productName: "AnimeCompanion",
+      productVersion: "0.1.0",
+      matchWebGLToCanvasSize: true
+    };
+
+    createUnityInstance(canvas, config, (progress) => {
+      const value = Math.max(0, Math.min(1, progress));
+      progressFill.style.transform = `scaleX(${value})`;
+      progressTrack.setAttribute("aria-valuenow", value.toFixed(3));
+    }).then((unityInstance) => {
+      loadingScreen.classList.add("hidden");
+      setTimeout(() => {
+        loadingScreen.remove();
+      }, 800);
+
+      window.unityInstance = unityInstance;
+    }).catch((message) => {
+      alert(message);
+    });
+  </script>
+
+  <div id="google-unity-overlay"
+     style="display:none; position:fixed; left:0; top:0; width:0; height:0; z-index:99999; pointer-events:none;">
+  <div id="google-unity-overlay-inner"
+       style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; pointer-events:auto; opacity:0.001;">
+  </div>
+</div>
+
+<script>
+  (function () {
+    const state = {
+      clientId: "",
+      inited: false,
+      lastWidth: 0,
+      lastUnityRect: null,
+      initAttempts: 0,
+      gisLoadErrorReported: false,
+      renderErrorReported: false,
+      renderAttempts: 0,
+      renderExceptions: 0,
+      readyReported: false,
+      pendingErrorCode: "",
+      pendingErrorTimer: 0,
+      pendingReadyTimer: 0,
+      renderCheckTimer: 0,
+      renderRetryTimer: 0
+    };
+
+    function flushGoogleError() {
+      if (!state.pendingErrorCode) return;
+
+      if (window.unityInstance) {
+        window.unityInstance.SendMessage(
+          "GoogleAuthController",
+          "OnWebGoogleError",
+          state.pendingErrorCode
+        );
+        state.pendingErrorCode = "";
+        state.pendingErrorTimer = 0;
+        return;
+      }
+
+      window.clearTimeout(state.pendingErrorTimer);
+      state.pendingErrorTimer = window.setTimeout(flushGoogleError, 250);
+    }
+
+    function sendGoogleError(code) {
+      state.readyReported = false;
+      state.pendingErrorCode = code || "auth_google_failed";
+      flushGoogleError();
+    }
+
+    function flushGoogleReady() {
+      if (!state.readyReported) return;
+
+      if (window.unityInstance) {
+        window.unityInstance.SendMessage(
+          "GoogleAuthController",
+          "OnWebGoogleReady",
+          ""
+        );
+        window.clearTimeout(state.pendingReadyTimer);
+        state.pendingReadyTimer = 0;
+        return;
+      }
+
+      window.clearTimeout(state.pendingReadyTimer);
+      state.pendingReadyTimer = window.setTimeout(flushGoogleReady, 250);
+    }
+
+    function sendGoogleReady() {
+      state.pendingErrorCode = "";
+      window.clearTimeout(state.pendingErrorTimer);
+      state.pendingErrorTimer = 0;
+      state.renderAttempts = 0;
+      state.renderExceptions = 0;
+      state.renderErrorReported = false;
+      state.readyReported = true;
+      flushGoogleReady();
+    }
+
+    function scheduleRenderRetry(delayMs) {
+      window.clearTimeout(state.renderRetryTimer);
+      state.renderRetryTimer = window.setTimeout(renderVisibleOverlay, delayMs || 250);
+    }
+
+    function reportGisLoadFailure() {
+      const wrap = document.getElementById("google-unity-overlay");
+      if (wrap) wrap.style.display = "none";
+      if (state.gisLoadErrorReported) return;
+      state.gisLoadErrorReported = true;
+      sendGoogleError("gsi_load_failed");
+    }
+
+    function hasUsableRenderedButton(root) {
+      const iframe = root ? root.querySelector("iframe") : null;
+      if (!iframe) return false;
+      const rect = iframe.getBoundingClientRect();
+      return rect.width >= 8 && rect.height >= 8;
+    }
+
+    function verifyRenderedButton(root) {
+      window.clearTimeout(state.renderCheckTimer);
+      state.renderCheckTimer = window.setTimeout(function () {
+        if (hasUsableRenderedButton(root)) {
+          sendGoogleReady();
+          return;
+        }
+
+        state.lastWidth = 0;
+        const wrap = document.getElementById("google-unity-overlay");
+        const rect = root ? root.getBoundingClientRect() : null;
+        if (!wrap || wrap.style.display === "none" || !rect || rect.width < 8 || rect.height < 8) {
+          scheduleRenderRetry(250);
+          return;
+        }
+
+        state.renderAttempts += 1;
+        if (state.renderAttempts < 12) {
+          scheduleRenderRetry(500);
+          return;
+        }
+
+        if (state.renderErrorReported) {
+          scheduleRenderRetry(1000);
+          return;
+        }
+        state.renderErrorReported = true;
+        sendGoogleError("gsi_button_unavailable");
+        scheduleRenderRetry(1000);
+      }, 500);
+    }
+
+    function ensureRendered(widthPx) {
+      const root = document.getElementById("google-unity-overlay-inner");
+      const wrap = document.getElementById("google-unity-overlay");
+      if (!root || !wrap || wrap.style.display === "none") return;
+
+      const rootRect = root.getBoundingClientRect();
+      if (rootRect.width < 8 || rootRect.height < 8) {
+        scheduleRenderRetry(250);
+        return;
+      }
+
+      const w = Math.max(200, Math.min(400, Math.round(widthPx || rootRect.width)));
+      if (Math.abs(state.lastWidth - w) < 4 && hasUsableRenderedButton(root)) return;
+
+      root.innerHTML = "";
+
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        if (window.__yorivaGoogleGisLoadFailed) reportGisLoadFailure();
+        else scheduleRenderRetry(250);
+        return;
+      }
+
+      try {
+        google.accounts.id.renderButton(root, {
+          theme: "outline",
+          size: "large",
+          shape: "pill",
+          text: "continue_with",
+          logo_alignment: "left",
+          width: w
+        });
+      } catch (error) {
+        state.lastWidth = 0;
+        state.renderExceptions += 1;
+        if (state.renderExceptions < 3) {
+          scheduleRenderRetry(500);
+          return;
+        }
+        sendGoogleError("gsi_button_unavailable");
+        scheduleRenderRetry(1000);
+        return;
+      }
+
+      state.lastWidth = w;
+      window.requestAnimationFrame(function () {
+        verifyRenderedButton(root);
+      });
+    }
+
+    function mapUnityRectToCss(left, top, width, height, canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const bufferWidth = canvas.width || rect.width;
+      const bufferHeight = canvas.height || rect.height;
+      const scaleX = bufferWidth > 0 ? rect.width / bufferWidth : 1;
+      const scaleY = bufferHeight > 0 ? rect.height / bufferHeight : 1;
+
+      return {
+        left: rect.left + left * scaleX,
+        top: rect.top + top * scaleY,
+        width: width * scaleX,
+        height: height * scaleY
+      };
+    }
+
+    function applyUnityOverlayRect() {
+      const wrap = document.getElementById("google-unity-overlay");
+      const canvas = document.getElementById("unity-canvas");
+      if (!wrap || !canvas || !state.lastUnityRect) return null;
+
+      const source = state.lastUnityRect;
+      const mapped = mapUnityRectToCss(
+        source.left,
+        source.top,
+        source.width,
+        source.height,
+        canvas
+      );
+
+      if (![mapped.left, mapped.top, mapped.width, mapped.height].every(Number.isFinite) ||
+          mapped.width < 8 || mapped.height < 8) {
+        return null;
+      }
+
+      wrap.style.left = Math.round(mapped.left) + "px";
+      wrap.style.top = Math.round(mapped.top) + "px";
+      wrap.style.width = Math.round(mapped.width) + "px";
+      wrap.style.height = Math.round(mapped.height) + "px";
+      return mapped;
+    }
+
+    function renderVisibleOverlay() {
+      const wrap = document.getElementById("google-unity-overlay");
+      if (!wrap || wrap.style.display === "none" || !state.inited) return;
+      const mapped = applyUnityOverlayRect();
+      if (!mapped) return;
+      window.requestAnimationFrame(function () {
+        ensureRendered(mapped.width);
+      });
+    }
+
+    function deliverGoogleCredential(credential, attempt) {
+      if (window.unityInstance) {
+        window.unityInstance.SendMessage(
+          "GoogleAuthController",
+          "OnWebGoogleIdToken",
+          credential
+        );
+        return;
+      }
+
+      if ((attempt || 0) >= 20) {
+        sendGoogleError("gsi_not_ready");
+        return;
+      }
+
+      window.setTimeout(function () {
+        deliverGoogleCredential(credential, (attempt || 0) + 1);
+      }, 250);
+    }
+
+    window.initGoogleForUnityOverlay = function (webClientId) {
+      if (!webClientId) {
+        sendGoogleError("client_id_missing");
+        return;
+      }
+
+      if (!/^\d+-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/.test(webClientId) ||
+          /(your|placeholder|replace|example)/i.test(webClientId)) {
+        sendGoogleError("client_id_invalid");
+        return;
+      }
+
+      state.clientId = webClientId;
+
+      if (state.inited) return;
+
+      if (window.__yorivaGoogleGisLoadFailed) {
+        reportGisLoadFailure();
+        return;
+      }
+
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        state.initAttempts += 1;
+        setTimeout(function () {
+          window.initGoogleForUnityOverlay(webClientId);
+        }, state.initAttempts < 40 ? 250 : 1000);
+        return;
+      }
+
+      try {
+        google.accounts.id.initialize({
+          client_id: webClientId,
+          callback: function (response) {
+            if (response && response.credential) {
+              deliverGoogleCredential(response.credential, 0);
+            } else {
+              sendGoogleError("no_credential");
+            }
+          },
+          ux_mode: "popup",
+          auto_select: false
+        });
+      } catch (error) {
+        state.inited = false;
+        sendGoogleError("client_id_invalid");
+        return;
+      }
+
+      state.inited = true;
+      state.initAttempts = 0;
+      state.renderAttempts = 0;
+      state.renderExceptions = 0;
+      renderVisibleOverlay();
+    };
+
+    window.showGoogleUnityOverlay = function (left, top, width, height) {
+      const wrap = document.getElementById("google-unity-overlay");
+      if (!wrap) return;
+
+      if (window.__yorivaGoogleGisLoadFailed) {
+        reportGisLoadFailure();
+        return;
+      }
+
+      state.lastUnityRect = { left: left, top: top, width: width, height: height };
+      wrap.style.display = "block";
+      applyUnityOverlayRect();
+
+      const root = document.getElementById("google-unity-overlay-inner");
+      if (hasUsableRenderedButton(root))
+        sendGoogleReady();
+
+      if (!state.inited && state.clientId) {
+        window.initGoogleForUnityOverlay(state.clientId);
+      } else {
+        renderVisibleOverlay();
+      }
+    };
+
+    window.hideGoogleUnityOverlay = function () {
+      const wrap = document.getElementById("google-unity-overlay");
+      if (wrap) wrap.style.display = "none";
+    };
+
+    window.addEventListener("resize", renderVisibleOverlay);
+    window.addEventListener("yoriva-google-gis-error", reportGisLoadFailure);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", renderVisibleOverlay);
+      window.visualViewport.addEventListener("scroll", renderVisibleOverlay);
+    }
+  })();
+</script>
+</body>
+</html>
